@@ -1,11 +1,10 @@
-# USAGE
-# python recognize_digits.py
-
 # import the necessary packages
 from imutils.perspective import four_point_transform
 from imutils import contours
 import imutils
 import cv2
+
+import numpy as np
 
 # define the dictionary of digit segments so we can identify
 # each digit on the thermostat
@@ -23,19 +22,24 @@ DIGITS_LOOKUP = {
 }
 
 # load the example image
-image = cv2.imread("example.jpg")
+#image = cv2.imread("example.jpg")
+image = cv2.imread("233a03d76b3ba32e18785dd0f9bbf0ffc785fc34.jpg")
+
 
 # pre-process the image by resizing it, converting it to
 # graycale, blurring it, and computing an edge map
 image = imutils.resize(image, height=500)
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-edged = cv2.Canny(blurred, 50, 200, 255)
+
+
+shapeMask = cv2.threshold(gray, 0, 255,
+	cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
 
 
 # find contours in the edge map, then sort them by their
 # size in descending order
-cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL,
+cnts = cv2.findContours(shapeMask.copy(), cv2.RETR_EXTERNAL,
 	cv2.CHAIN_APPROX_SIMPLE)
 cnts = cnts[0] if imutils.is_cv2() else cnts[1]
 cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
@@ -44,7 +48,7 @@ displayCnt = None
 
 # loop over the contours
 for c in cnts:
-	# approximate the contour
+## approximate the contour
 	peri = cv2.arcLength(c, True)
 	approx = cv2.approxPolyDP(c, 0.02 * peri, True)
 
@@ -60,9 +64,28 @@ warped = four_point_transform(gray, displayCnt.reshape(4, 2))
 output = four_point_transform(image, displayCnt.reshape(4, 2))
 
 
-
 # threshold the warped image, then apply a series of morphological
 # operations to cleanup the thresholded image
+
+
+
+def adjust_gamma(image, gamma=1.0):
+   invGamma = 1.0 / gamma
+   table = np.array([
+      ((i / 255.0) ** invGamma) * 255
+      for i in np.arange(0, 256)])
+   return cv2.LUT(image.astype(np.uint8), table.astype(np.uint8))
+
+
+
+enlighted = adjust_gamma(warped,gamma=10)
+
+
+thresh = cv2.threshold(warped, 187, 255,
+	cv2.THRESH_BINARY_INV)[1]
+
+
+
 
 ############# ************************************************
 # TODO : c'est ici que ça merde
