@@ -30,9 +30,9 @@ def preprocessing(image):
     image = imutils.resize(image, height=500)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    blurred = adjust_gamma(blurred, gamma=0.7)
+    gamma = adjust_gamma(blurred, gamma=0.7)
 
-    shapeMask = cv2.threshold(blurred, 0, 255,
+    shapeMask = cv2.threshold(gamma, 0, 255,
         cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
 
 
