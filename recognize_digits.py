@@ -81,7 +81,17 @@ def adjust_gamma(image, gamma=1.0):
 enlighted = adjust_gamma(warped,gamma=10)
 
 
-thresh = cv2.threshold(warped, 187, 255,
+
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+cl1 = clahe.apply(enlighted)
+
+
+
+
+
+
+
+thresh = cv2.threshold(enlighted, 187, 255,
 	cv2.THRESH_BINARY_INV)[1]
 
 
