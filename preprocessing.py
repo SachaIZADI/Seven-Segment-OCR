@@ -3,15 +3,13 @@ from imutils.perspective import four_point_transform
 import imutils
 import cv2
 
-import numpy as np
-
 
 import glob
 
 
 def distance_from_center(square, image):
-    center_sq = 0.5*(square[0]+ square[3])
-    center_image = 0.5*np.array(image.shape[:2])
+    center_sq = 0.5*(square[0]+ square[2])
+    center_image = 0.5*np.array([image.shape[1],image.shape[0]])
     distance = np.linalg.norm(center_sq-center_image)
     return(distance)
 
@@ -25,11 +23,14 @@ def adjust_gamma(image, gamma=1.0):
    return cv2.LUT(image.astype(np.uint8), table.astype(np.uint8))
 
 
+import numpy as np
+
 
 def preprocessing(image):
     image = imutils.resize(image, height=500)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
     gamma = adjust_gamma(blurred, gamma=0.7)
 
     shapeMask = cv2.threshold(gamma, 0, 255,
@@ -47,16 +48,24 @@ def preprocessing(image):
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.02 * peri, True)
 
-        #checker que approx est bien centré et de la bonne taille
-
         if len(approx) == 4:
             if displayCnt is None:
                 displayCnt = approx
 
             old_dist = distance_from_center(displayCnt, shapeMask)
-            newdist = distance_from_center(approx, shapeMask)
+            new_dist = distance_from_center(approx, shapeMask)
 
-            if old_dist > newdist and cv2.contourArea(approx)>0.1*(shapeMask.shape[0]*shapeMask.shape[1]) :
+            # TODO :
+            """
+            1. how to get w & h
+            2. how to get the orientation of the rectangle
+            3. troubleshooting
+            """
+
+            w = np.linalg.norm(displayCnt[0]-displayCnt[1])
+            h = np.linalg.norm(displayCnt[1]-displayCnt[2])
+
+            if old_dist > new_dist and h<w and cv2.contourArea(approx)>0.05*(shapeMask.shape[0]*shapeMask.shape[1]) :
                 displayCnt = approx
 
 
@@ -75,7 +84,7 @@ def preprocessing(image):
 
 if __name__ == "__main__":
 
-    fail = [0,0,0]
+    fail = [0,0,0,0,0]
 
     for file in glob.glob('Datasets/HQ_digital/*jpg'):
         image = cv2.imread(file)
@@ -102,5 +111,22 @@ if __name__ == "__main__":
         except:
             fail[2] += 1
 
+
+    for file in glob.glob('Datasets/HQ_analog/*jpg'):
+        image = cv2.imread(file)
+        try:
+            preprocessed = preprocessing(image)
+            cv2.imwrite('Datasets/HQ_analog_preprocessing/' + str(file).split('/')[-1], preprocessed)
+        except:
+            fail[3] += 1
+
+
+    for file in glob.glob('Datasets/LQ_analog/*jpg'):
+        image = cv2.imread(file)
+        try:
+            preprocessed = preprocessing(image)
+            cv2.imwrite('Datasets/LQ_analog_preprocessing/' + str(file).split('/')[-1], preprocessed)
+        except:
+            fail[4] += 1
 
     print(fail)
