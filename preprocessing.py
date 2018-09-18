@@ -9,6 +9,12 @@ import numpy as np
 import glob
 
 
+def distance_from_center(square, image):
+    center_sq = 0.5*(square[0]+ square[3])
+    center_image = 0.5*np.array(image.shape[:2])
+    distance = np.linalg.norm(center_sq-center_image)
+    return(distance)
+
 
 
 def adjust_gamma(image, gamma=1.0):
@@ -19,11 +25,12 @@ def adjust_gamma(image, gamma=1.0):
    return cv2.LUT(image.astype(np.uint8), table.astype(np.uint8))
 
 
+
 def preprocessing(image):
     image = imutils.resize(image, height=500)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-
+    blurred = adjust_gamma(blurred, gamma=0.7)
 
     shapeMask = cv2.threshold(blurred, 0, 255,
         cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
@@ -38,12 +45,21 @@ def preprocessing(image):
 
     for c in cnts:
         peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.01 * peri, True)
+        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
 
+        #checker que approx est bien centré et de la bonne taille
 
         if len(approx) == 4:
-            displayCnt = approx
-            break
+            if displayCnt is None:
+                displayCnt = approx
+
+            old_dist = distance_from_center(displayCnt, shapeMask)
+            newdist = distance_from_center(approx, shapeMask)
+
+            if old_dist > newdist and cv2.contourArea(approx)>0.1*(shapeMask.shape[0]*shapeMask.shape[1]) :
+                displayCnt = approx
+
+
 
     warped = four_point_transform(gray, displayCnt.reshape(4, 2))
     #output = four_point_transform(image, displayCnt.reshape(4, 2))
@@ -66,7 +82,8 @@ if __name__ == "__main__":
         try :
             preprocessed = preprocessing(image)
             cv2.imwrite('Datasets/HQ_digital_preprocessing/'+str(file).split('/')[-1], preprocessed)
-        except:
+        except Exception as e :
+            #print(e)
             fail[0]+=1
 
     for file in glob.glob('Datasets/LQ_digital/*jpg'):
