@@ -2,6 +2,7 @@
 from imutils.perspective import four_point_transform
 import imutils
 import cv2
+import scipy.spatial as sp
 
 
 import glob
@@ -12,6 +13,46 @@ def distance_from_center(square, image):
     center_image = 0.5*np.array([image.shape[1],image.shape[0]])
     distance = np.linalg.norm(center_sq-center_image)
     return(distance)
+
+
+def sortpts_clockwise(A):
+    # Sort A based on Y(col-2) coordinates
+    sortedAc2 = A[np.argsort(A[:,1]),:]
+
+    # Get top two and bottom two points
+    top2 = sortedAc2[0:2,:]
+    bottom2 = sortedAc2[2:,:]
+
+    # Sort top2 points to have the first row as the top-left one
+    sortedtop2c1 = top2[np.argsort(top2[:,0]),:]
+    top_left = sortedtop2c1[0,:]
+
+    # Use top left point as pivot & calculate sq-euclidean dist against
+    # bottom2 points & thus get bottom-right, bottom-left sequentially
+    sqdists = sp.distance.cdist(top_left[None], bottom2, 'sqeuclidean')
+    rest2 = bottom2[np.argsort(np.max(sqdists,0))[::-1],:]
+
+    # Concatenate all these points for the final output
+    return np.concatenate((sortedtop2c1,rest2),axis =0)
+
+
+
+def dimension_rectangle(shape):
+
+    rectangle = shape.copy()
+
+    rectangle = rectangle.reshape(4,2)
+    rectangle = sortpts_clockwise(rectangle)
+    Ly = 0
+    Lx = 0
+
+    for i in range(4):
+        d = rectangle[i]-rectangle[(i+1)%4]
+        if abs(d[0]) > Lx :
+            Lx = abs(d[0])
+        if abs(d[1]) > Ly :
+            Ly = abs(d[1])
+    return((Lx,Ly))
 
 
 
@@ -55,30 +96,32 @@ def preprocessing(image):
             old_dist = distance_from_center(displayCnt, shapeMask)
             new_dist = distance_from_center(approx, shapeMask)
 
-            # TODO :
-            """
-            1. how to get w & h
-            2. how to get the orientation of the rectangle
-            3. troubleshooting
-            """
+            Lx, Ly = dimension_rectangle(displayCnt)
 
-            w = np.linalg.norm(displayCnt[0]-displayCnt[1])
-            h = np.linalg.norm(displayCnt[1]-displayCnt[2])
-
-            if old_dist > new_dist and h<w and cv2.contourArea(approx)>0.05*(shapeMask.shape[0]*shapeMask.shape[1]) :
+            if old_dist > new_dist and Ly < Lx and cv2.contourArea(approx) > 0.03*(shapeMask.shape[0]*shapeMask.shape[1]) :
                 displayCnt = approx
 
+    displayCnt = displayCnt.reshape(4,2)
+    displayCnt = sortpts_clockwise(displayCnt)
 
+    src_pts = displayCnt.copy()
+    src_pts = src_pts.astype(np.float32)
 
-    warped = four_point_transform(gray, displayCnt.reshape(4, 2))
-    #output = four_point_transform(image, displayCnt.reshape(4, 2))
+    dst_pts = np.array([[0,0],[400,0],[400,100],[0,100]], dtype=np.float32)
+    dst_pts = dst_pts.astype(np.float32)
+
+    persp = cv2.getPerspectiveTransform(src_pts, dst_pts)
+    warped = cv2.warpPerspective(gray, persp, (400, 100))
+
+    #warped = four_point_transform(gray, displayCnt.reshape(4, 2))
+    output = four_point_transform(image, displayCnt.reshape(4, 2))
 
     enlighted = adjust_gamma(warped, gamma=3)
 
 
     # faire du padding
 
-    return(enlighted)
+    return(warped)
 
 
 

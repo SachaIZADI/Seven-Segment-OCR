@@ -12,23 +12,32 @@ import glob
 
 class frameExtractor:
 
-    def __init__(self, src_file_name, dst_file_name=None, output_shape =(400,100)):
+    def __init__(self, image=None, src_file_name=None, dst_file_name=None, output_shape =(400,100)):
         """
-        :param src_file_name:
-        :param dst_file_name:
-        :param output_shape:
+        Use this class to extract the frame/LCD screen from the image. This is our step 1 for image preprocessing.
+        The final frame is extracted in grayscale.
+        Note that it works for the "digital" case and can be used for the "analog" case, but it is more efficient on the "digital" case.
+        :param image: RGB image (numpy array NxMx3) with a screen to extract. If image is None, the image will be extracted from src_filename
+        :param src_file_name: filename to load the source image where the screen needs to be extracted (e.g. HQ_digital/0a07d2cff5beb0580bca191427e8cd6e1a0eb678.jpg)
+        :param dst_file_name: filename to save the preprocessed image (e.g. HQ_digital_frame/0a07d2cff5beb0580bca191427e8cd6e1a0eb678.jpg
+        :param output_shape: shape (in pxl) of the output image.
         """
-        self.image = cv2.imread(src_file_name)
+        if image is None :
+            self.image = cv2.imread(src_file_name)
+        else :
+            self.image = image
         self.dst_file_name = dst_file_name
         self.output_shape = output_shape
         self.frame = None
 
 
-
     def distance_from_center(self, rectangle):
         """
-        :param rectangle:
-        :return:
+        Use this function to measure how far a rectangle is from the center of an image.
+        Most of the time the frame is approx. in the middle of the picture.
+        Note that the code works for shapes that are approx. rectangles.
+        :param rectangle: a 4x2 array with the coordinates of each corner of the rectangle.
+        :return: the distance (a float) between the center of the rectangle and the center of the picture.
         """
         center_rc = 0.5*(rectangle[0]+ rectangle[2])
         center_image = 0.5*np.array([self.image.shape[1],self.image.shape[0]])
@@ -39,57 +48,66 @@ class frameExtractor:
 
     def sort_pts_clockwise(A):
         """
-        :param A:
-        :return:
+        Use this function to sort in clockwise order points in R^2.
+        Credit: https://stackoverflow.com/questions/30088697/4-1-2-numpy-array-sort-clockwise
+        :param A: a Nx2 array with the 2D coordinates of the points to sort.
+        :return: a Nx2 array with the points sorted in clockwise order starting with the top-left point.
         """
         # Sort A based on Y(col-2) coordinates
         sortedAc2 = A[np.argsort(A[:,1]),:]
-
         # Get top two and bottom two points
         top2 = sortedAc2[0:2,:]
         bottom2 = sortedAc2[2:,:]
-
         # Sort top2 points to have the first row as the top-left one
         sortedtop2c1 = top2[np.argsort(top2[:,0]),:]
         top_left = sortedtop2c1[0,:]
-
         # Use top left point as pivot & calculate sq-euclidean dist against
         # bottom2 points & thus get bottom-right, bottom-left sequentially
         sqdists = sp.distance.cdist(top_left[None], bottom2, 'sqeuclidean')
         rest2 = bottom2[np.argsort(np.max(sqdists,0))[::-1],:]
-
         # Concatenate all these points for the final output
         return np.concatenate((sortedtop2c1,rest2),axis =0)
 
 
     def adjust_gamma(image, gamma=1.0):
         """
-        :param gamma:
-        :return:
+        Use this function to adjust illumination in an image.
+        Credit: https://stackoverflow.com/questions/33322488/how-to-change-image-illumination-in-opencv-python
+        :param image: A grayscale image (NxM int array in [0, 255]
+        :param gamma: A positive float. If gamma<1 the image is darken / if gamma>1 the image is enlighten / if gamma=1 nothing happens.
+        :return: the enlighten/darken version of image
         """
         invGamma = 1.0 / gamma
         table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)])
         return cv2.LUT(image.astype(np.uint8), table.astype(np.uint8))
 
 
-    def preprocessing(self):
+    def frameDetection(self):
         """
-        :return:
+        The core method of the class. Use it to extract the frame in the image.
+        The extracted frame is in grayscale.
+        The followed steps are :
+            1. grayscale + smoothering + gamma to make the frame darker + binary threshold (rational = the frame is one of the darkest part in the picture).
+            2. extract regions of "interest".
+            3. heuristic to find a region of interest that is large enough, in the center of the picture and where length along x-axis > length along y-axis.
+            4. make a perspective transform to crop the image and deal with perspective deformations.
         """
         self.image = imutils.resize(self.image, height=500)
 
+        # Step 1: grayscale + smoothering + gamma to make the frame darker + binary threshold
         gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-
         gamma = frameExtractor.adjust_gamma(blurred, gamma=0.7)
         shapeMask = cv2.threshold(gamma, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+
+        # Step 2: extract regions of "interest".
         label_image = label(shapeMask)
 
         Cnt = None
         position = [0, 0, 0, 0]
 
         for region in regionprops(label_image):
-
+            # Step 3: heuristic to find a region large enough, in the center & with length along x-axis > length along y-axis.
             minr, minc, maxr, maxc = region.bbox
             c = np.array([[minc, minr], [minc, maxr], [maxc, minr], [maxc, maxr]])
 
@@ -103,7 +121,6 @@ class frameExtractor:
             Lx = maxc - minc
             Ly = maxr - minr
 
-
             c = frameExtractor.sort_pts_clockwise(c)
 
             if old_dist>new_dist and Ly<Lx and cv2.contourArea(c)>0.05*(shapeMask.shape[0]*shapeMask.shape[1]):
@@ -114,7 +131,11 @@ class frameExtractor:
         Cnt = frameExtractor.sort_pts_clockwise(Cnt)
 
 
+        # Step 4: Make a perspective transform to crop the image and deal with perspective deformations.
         try:
+            # Crop the image around the region of interest (but keep a bit of distance with a 30px padding).
+            # Darken + Binary threshold + rectangle detection.
+            # If this technique fails, raise an error and use basic methods (except part).
 
             crop_img = self.image[max(0, position[0] - 30):min(position[2] + 30, self.image.shape[0]),\
                        max(0, position[1] - 30):min(self.image.shape[1], position[3] + 30)]
@@ -154,7 +175,7 @@ class frameExtractor:
 
 
         except:
-
+            # More basic techniques that give +/- acceptable results when the first technique fails.
             src_pts = Cnt.copy()
             src_pts = src_pts.astype(np.float32)
 
@@ -164,17 +185,23 @@ class frameExtractor:
             persp = cv2.getPerspectiveTransform(src_pts, dst_pts)
             warped = cv2.warpPerspective(gray, persp, (400, 100))
 
-
+        # Frame is extracted from the initial image in grayscale (not other processing done on the image).
         self.frame = warped
 
 
     def extractAndSaveFrame(self):
-        self.preprocessing()
+        """
+        Use this method to 1. detect and extract the frame & 2. save it in dst_file_name.
+        """
+        self.frameDetection()
         cv2.imwrite(self.dst_file_name, self.frame)
 
 
 
 
+"""
+A main function to preprocess all the images.
+"""
 
 if __name__ == "__main__":
 
@@ -230,5 +257,5 @@ if __name__ == "__main__":
         except:
             fail[4] += 1
 
-            
+
     print(fail)
