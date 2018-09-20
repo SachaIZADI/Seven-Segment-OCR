@@ -195,6 +195,7 @@ class frameExtractor:
 
 
     # TODO : work on this + apply low pass filter (sobel gradients etc.)
+    # TODO : check why they fail
     """
     http://www.amphident.de/en/blog/preprocessing-for-automatic-pattern-identification-in-wildlife-removing-glare.html
     http://people.csail.mit.edu/yichangshih/mywebsite/reflection.pdf
@@ -262,7 +263,7 @@ if __name__ == "__main__":
     else:
         os.makedirs('Datasets_frames/')
 
-    fail = [0, 0, 0, 0, 0]
+    fail = [0, 0, 0]
 
     for file in glob.glob('Datasets/HQ_digital/*jpg'):
 
@@ -298,4 +299,4 @@ if __name__ == "__main__":
         except:
             fail[2] += 1
 
-print(fail)
+    print(fail)
