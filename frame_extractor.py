@@ -8,11 +8,13 @@ from skimage.measure import label, regionprops
 
 import glob
 
+from homofilt import HomomorphicFilter
+
 
 
 class frameExtractor:
 
-    def __init__(self, image=None, src_file_name=None, dst_file_name=None, return_image=False, output_shape =(400,100)):
+    def __init__(self, image=None, src_file_name=None, dst_file_name=None, return_image=False, output_shape =(800,200)):
         """
         Use this class to extract the frame/LCD screen from the image. This is our step 1 for image preprocessing.
         The final frame is extracted in grayscale.
@@ -30,6 +32,7 @@ class frameExtractor:
         self.dst_file_name = dst_file_name
         self.return_image = return_image
         self.output_shape = output_shape
+        self.raw_frame = None
         self.frame = None
 
 
@@ -188,7 +191,24 @@ class frameExtractor:
             warped = cv2.warpPerspective(gray, persp, (400, 100))
 
         # Frame is extracted from the initial image in grayscale (not other processing done on the image).
-        self.frame = warped
+        self.raw_frame = warped
+
+
+
+    # TODO : work on this + apply low pass filter (sobel gradients etc.)
+    def preprocess_Frame(self):
+        """
+        Final preprocessing that outputs a clean image 'cleaned_img' with more contrasts
+        """
+        gray = cv2.cvtColor(self.raw_frame, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        homo_filter = HomomorphicFilter(a=0.75, b=1.25)
+        img_filtered = homo_filter.filter(I=blurred, filter_params=[30, 2])
+        gamma = frameExtractor.adjust_gamma(img_filtered, gamma=5)
+        thresh = cv2.threshold(gamma, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+        cleaned_img = cv2.dilate(thresh, None, iterations=1)
+        self.frame = cleaned_img
+
 
 
     def extractAndSaveFrame(self):
@@ -197,6 +217,7 @@ class frameExtractor:
         :return: the extracted frame (np.array) if it was specified when instantiating the class.
         """
         self.frameDetection()
+        self.preprocess_Frame()
         cv2.imwrite(self.dst_file_name, self.frame)
         if self.return_image:
             return self.frame
