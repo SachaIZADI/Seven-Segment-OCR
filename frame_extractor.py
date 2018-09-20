@@ -200,6 +200,7 @@ class frameExtractor:
     """
     http://www.amphident.de/en/blog/preprocessing-for-automatic-pattern-identification-in-wildlife-removing-glare.html
     http://people.csail.mit.edu/yichangshih/mywebsite/reflection.pdf
+    http://news.mit.edu/2015/algorithm-removes-reflections-photos-0511
     """
     def preprocessFrame(self):
         """
