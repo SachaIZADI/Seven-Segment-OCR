@@ -197,6 +197,10 @@ class frameExtractor:
 
 
     # TODO : work on this + apply low pass filter (sobel gradients etc.)
+    """
+    http://www.amphident.de/en/blog/preprocessing-for-automatic-pattern-identification-in-wildlife-removing-glare.html
+    http://people.csail.mit.edu/yichangshih/mywebsite/reflection.pdf
+    """
     def preprocessFrame(self):
         """
         Final preprocessing that outputs a clean image 'cleaned_img' with more contrasts
@@ -210,15 +214,24 @@ class frameExtractor:
         cleaned_img = cv2.dilate(thresh, None, iterations=1)
         self.frame = cleaned_img
 
-    # TODO slicer l'image :
+    # TODO commenter le code
     def sliceFrame(self):
+        """
+        Use this method to
+        Get the bounding box considering that the comma is at 8/13 of the image
+        :return:
+        """
         stop_at = int(np.floor(self.output_shape[0]*8/13))
         self.sliced_frame = np.array(self.frame)[:,:stop_at]
 
 
     def extractAndSaveFrame(self):
+        # TODO : commenter le code
         """
-        Use this method to 1. detect and extract the frame & 2. save it in dst_file_name.
+        Use this method to
+                1. detect and extract the frame.
+                2.
+                3. save it in dst_file_name.
         :return: the extracted frame (np.array) if it was specified when instantiating the class.
         """
         self.frameDetection()

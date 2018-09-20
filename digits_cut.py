@@ -8,9 +8,29 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 
-class digits_cut :
+class cutDigits :
 
-    def cut_and_affect_to_folder(preprocessed_img, dist, labels, digits_path, ind, last_digit = 2):
+    def __init__(self, image=None, src_file_name=None, dst_folder_name=None, return_image=False):
+        self.image = image
+        self.src_file_name = src_file_name
+        self.dst_folder_name = dst_folder_name
+        self.return_image = return_image
+        self.box_size = None
+
+    #TODO : modifier le commentaire
+    def get_bounding_box_dummy(self):
+        """1st approach : dummy approach
+        Get the bounding box considering that the comma is at 8/13 of the image
+        and dividing the area by 4 before the detected comma
+
+        :param ppc_img : the preprocessed image (output of a preprocess fct) ie the exctracted screen + constrats
+        :return dist : the distance between each cut (used after in the cut_and_affect_to_folder ) ie the size of the bounding boxes
+        plots the image with the computed cuts
+        """
+        self.box_size = self.image.shape[1]/4
+
+
+    def cut_and_affect_to_folder(self, preprocessed_img, dist, labels, digits_path, ind, last_digit = 2):
         """
         Creates bounding boxes and put each box in the folder corresponding to its label
     preprocessed_img : preprocessed image is after exctarcted dark screen + contrasts
