@@ -5,15 +5,16 @@ import matplotlib.pyplot as plt
 
 
 class cutDigits:
-    def __init__(self, image=None, src_file_name=None, dst_folder_name=None, return_image=False, last_digit=3, labels=None):
+    def __init__(self, image=None, src_file_name=None, dst_folder_name=None, last_digit=4, labels=None):
         """
         The aim of this class is to extract digits from the frame-only preprocessed image.
         We to delimit digits by bounding boxes.
         We tried several approaches, but we present here the most successful one, a "dummy" yet efficient approach.
         :param image: RGB image (numpy array NxMx3) of a SLICED SCREEN. If image is None, the image will be extracted from src_filename
         :param src_file_name: filename of a SLICED SCREEN to load the source image (e.g. HQ_digital_preprocessing/0a07d2cff5beb0580bca191427e8cd6e1a0eb678.jpg)
-        :param image:
-
+        :param dst_folder_name: home FOLDERname where to save the extracted digits.
+        :param last_digit: int, the number of digits you want to extract starting from the left (0 = no digits / 4 = all four digits).
+        :param labels: list, list of labels corresponding to the image, e.g. if th image shows 123.45, the labels will be ['x',1,2,3].
         """
         if image is None :
             self.image = cv2.imread(src_file_name)
@@ -21,7 +22,6 @@ class cutDigits:
             self.image = image
         self.src_file_name = src_file_name
         self.dst_folder_name = dst_folder_name
-        self.return_image = return_image
         self.last_digit=last_digit
         self.labels = labels
 
@@ -30,31 +30,9 @@ class cutDigits:
 
 
 
-    #TODO : modifier le commentaire
     def get_bounding_box_dummy(self):
         """
-        1st approach : dummy approach
-        Get the bounding box considering that the comma is at 8/13 of the image
-        and dividing the area by 4 before the detected comma
-
-        :param ppc_img : the preprocessed image (output of a preprocess fct) ie the exctracted screen + constrats
-        :return dist : the distance between each cut (used after in the cut_and_affect_to_folder ) ie the size of the bounding boxes
-        plots the image with the computed cuts
-
-        Creates bounding boxes and put each box in the folder corresponding to its label
-    preprocessed_img : preprocessed image is after exctarcted dark screen + contrasts
-
-        :param dist: the dist between each cuts, ie the width of each bounding boxes (same widths), output of the 'get_bd_dummy' function
-        :param labels: list of int of size 4, 10 labels : from '0' to '9' and 'X' if nothing of the digits BEFORE the COMMA
-        :param digits_path: string, the output path to save the bounding boxes in.
-                Of the form "Datasets_digits/" and contains the '0', '1', ... 'X' folders
-                The image reduced to its bounding box is saved into the folder corresdponding to its label
-
-        :param ind: the ID of the image 'o8sdf7ksqjdh.jpg'
-        :param last_digit: int, optional.
-                  If 2, we only save the 3 last digits before the comma (without the unity digit)
-                  If 3, we save all digits before the comma
-        :return:
+        Use this method to get bounding boxes and extract numbers by dividing the area in 4 equal parts ("dummy" yet efficient approach).
         """
 
         self.boxes = []
@@ -66,10 +44,10 @@ class cutDigits:
             self.boxes += [self.image[:, int(inf):int(sup)]]
 
 
-    # TODO : modifier le commentaire
+    # TODO : modifier la manière de save
     def save_to_folder(self) :
         """
-        :return:
+        Use this method to save the extracted bounding boxes.
         """
         if self.dst_folder_name is None :
             return
@@ -101,6 +79,8 @@ class cutDigits:
                 cv2.imwrite(dst_file_name, box)
 
 
+
+# --------------------- End of the class -----------------------------------
 
 
 
