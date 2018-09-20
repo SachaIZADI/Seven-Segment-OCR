@@ -14,7 +14,7 @@ from homofilt import HomomorphicFilter
 
 class frameExtractor:
 
-    def __init__(self, image=None, src_file_name=None, dst_file_name=None, return_image=False, output_shape =(800,200)):
+    def __init__(self, image=None, src_file_name=None, dst_file_name=None, return_image=False, output_shape =(400,100)):
         """
         Use this class to extract the frame/LCD screen from the image. This is our step 1 for image preprocessing.
         The final frame is extracted in grayscale.
@@ -34,6 +34,7 @@ class frameExtractor:
         self.output_shape = output_shape
         self.raw_frame = None
         self.frame = None
+        self.sliced_frame = None
 
 
     def distance_from_center(self, rectangle):
@@ -196,7 +197,7 @@ class frameExtractor:
 
 
     # TODO : work on this + apply low pass filter (sobel gradients etc.)
-    def preprocess_Frame(self):
+    def preprocessFrame(self):
         """
         Final preprocessing that outputs a clean image 'cleaned_img' with more contrasts
         """
@@ -209,6 +210,10 @@ class frameExtractor:
         cleaned_img = cv2.dilate(thresh, None, iterations=1)
         self.frame = cleaned_img
 
+    # TODO slicer l'image :
+    def sliceFrame(self):
+        stop_at = int(np.floor(self.output_shape[0]*8/13))
+        self.sliced_frame = np.array(self.frame)[:,:stop_at]
 
 
     def extractAndSaveFrame(self):
@@ -217,10 +222,11 @@ class frameExtractor:
         :return: the extracted frame (np.array) if it was specified when instantiating the class.
         """
         self.frameDetection()
-        self.preprocess_Frame()
-        cv2.imwrite(self.dst_file_name, self.frame)
+        self.preprocessFrame()
+        self.sliceFrame()
+        cv2.imwrite(self.dst_file_name, self.sliced_frame)
         if self.return_image:
-            return self.frame
+            return self.sliced_frame
         else:
             return
 
