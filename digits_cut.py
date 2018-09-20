@@ -1,9 +1,6 @@
 import cv2
 import os
 import pandas as pd
-import matplotlib.pyplot as plt
-
-
 
 
 class cutDigits:
@@ -73,71 +70,35 @@ class cutDigits:
 
 
 
-
-
 """
 A main function to cut the digits on all images.
 """
 
-if __name__ == "main":
+if __name__ == "__main__":
 
-    A = 'Datasets_digits/%s/%s_%s'%('a','b','c')
+    # TODO: check why they fail
 
+    fail = 0
 
-    # ---- INITIALISATION ----
+    df = []
+    # NB: These 3 datasets were made with Excel
+    df += [pd.read_csv('Datasets_digits/HQ_digital.csv',sep=';')]
+    df += [pd.read_csv('Datasets_digits/LQ_digital.csv',sep=';')]
+    df += [pd.read_csv('Datasets_digits/MQ_digital.csv',sep=';')]
+    df = pd.concat(df)
 
-    # eleven folder 'Datasets'
-    raw_dir = "Datasets_raw/"
+    for i in range(df.shape[0]):
+        line = df.iloc[i]
+        labels = [line.cadran_1, line.cadran_2, line.cadran_3, line.cadran_4]
+        file_name = line.image
+        src_file_name = "Datasets_frames/%s" % file_name
 
-    # may be HQ_digital, MQ_digital or LQ_digital
-    cat_dir =  "LQ_digital"
+        try :
+            cutter = cutDigits(src_file_name=src_file_name, labels=labels)
+            cutter.get_bounding_box_dummy()
+            cutter.save_to_folder()
 
-    # path to Sacha's output, with the extracted screen
-    preprocessed_dir = "Datasets_preprocessed/"+ cat_dir +"_preprocessing/"
+        except :
+            fail += 1
 
-    all_images = os.listdir(raw_dir + cat_dir)
-    all_images_preprocessed = os.listdir(preprocessed_dir)
-
-    # output path to save individual digits in
-    # of the form "Datasets_digits/" and contains the '0', '1', ... 'X' folders
-    digits_path = "Datasets_digits/"
-
-    # Csv file with the image name, 'cadran_1', 'cadran_2', 'cadran_3', 'cadran_4' columns containing the digits' labels before the comma
-    labels_path = "Datasets_labels/"+cat_dir+".csv"
-
-    # convert file into dataframe
-    labels_df   = csv_labels_to_df(labels_path)
-
-    # ---- LOOP ----
-
-    for ind in all_images_preprocessed:
-        if ind != ".DS_Store":
-            print(ind)
-            image = cv2.imread(preprocessed_dir + ind)                  # get the extracted screen from img
-            #warped = extract_screen(image)
-            preprocessed_img = preprocess2(image)                       # preprocess the img
-            dist = get_bd_dummy(preprocessed)                           # get bounding boxes' size
-
-            # get the labels of the digits before the comma
-            labels = labels_df[labels_df['image'] == ind][['cadran_1', 'cadran_2', 'cadran_3', 'cadran_4']].values
-
-            # get bounding boxes and save truncated images in the folder corresponding to its label
-            cut_and_affect_to_folder(preprocessed_img, dist, labels[0], \
-                                     digits_path, ind, last_digit= 2)
-            plt.close()
-
-
-
-# DECOMMENT IF IMAGES NOT PREPROCESSED ALREADY
-'''for ind in all_images:
-    print(ind)
-    image = cv2.imread(input_dir + ind)
-    warped = extract_screen(image)
-    preprocessed = preprocess_short(warped)
-    dist = get_bd_short_wo_comma(preprocessed)
-    preprocessed_img = warped
-    labels = labels_df[labels_df['image'] == ind][['cadran_1', 'cadran_2', 'cadran_3', 'cadran_4']].values
-    affect_to_folder(preprocessed_img, dist, labels[0], digits_path, ind)
-
-    #plt.savefig(output_dir + "bd_plot_" + ind)
-    plt.close()'''
+    print(fail)
