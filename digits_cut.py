@@ -4,8 +4,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
+
+
 class cutDigits:
-    def __init__(self, image=None, src_file_name=None, dst_folder_name=None, last_digit=4, labels=None):
+
+    def __init__(self, image=None, src_file_name=None, dst_folder_name='Datasets_digits', last_digit=4, labels=None):
         """
         The aim of this class is to extract digits from the frame-only preprocessed image.
         We to delimit digits by bounding boxes.
@@ -44,7 +47,6 @@ class cutDigits:
             self.boxes += [self.image[:, int(inf):int(sup)]]
 
 
-    # TODO : modifier la manière de save
     def save_to_folder(self) :
         """
         Use this method to save the extracted bounding boxes.
@@ -56,28 +58,15 @@ class cutDigits:
             if self.labels :
                 box = self.boxes[i]
                 label = self.labels[i]
-
-                file_name = self.src_file_name.split('/')[-1].split('.')[0]
-                dst_file_name = self.dst_folder_name + "/" \
-                                + file_name \
-                                + "_label_" + str(label) \
-                                + "_position_" + str(i) \
-                                + '.jpg'
-
+                src_file_name = self.src_file_name.split('/')[-1].split('.')[0]
+                dst_file_name = 'Datasets_digits/%s/%s_%s.jpg' % (label, src_file_name, str(i))
                 cv2.imwrite(dst_file_name, box)
 
             else :
                 box = self.boxes[i]
-
-                file_name = self.src_file_name.split('/')[-1].split('.')[0]
-                dst_file_name = self.dst_folder_name + "/" \
-                                + file_name \
-                                + "_label_no_" + \
-                                + "_position_" + str(i) \
-                                + '.jpg'
-
+                src_file_name = self.src_file_name.split('/')[-1].split('.')[0]
+                dst_file_name = 'Datasets_digits/%s/%s_%s.jpg' % ('missing_label', src_file_name, str(i))
                 cv2.imwrite(dst_file_name, box)
-
 
 
 # --------------------- End of the class -----------------------------------
@@ -91,6 +80,8 @@ A main function to cut the digits on all images.
 """
 
 if __name__ == "main":
+
+    A = 'Datasets_digits/%s/%s_%s'%('a','b','c')
 
 
     # ---- INITIALISATION ----
