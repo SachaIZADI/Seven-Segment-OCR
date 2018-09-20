@@ -12,7 +12,7 @@ import glob
 
 class frameExtractor:
 
-    def __init__(self, image=None, src_file_name=None, dst_file_name=None, output_shape =(400,100)):
+    def __init__(self, image=None, src_file_name=None, dst_file_name=None, return_image=False, output_shape =(400,100)):
         """
         Use this class to extract the frame/LCD screen from the image. This is our step 1 for image preprocessing.
         The final frame is extracted in grayscale.
@@ -20,6 +20,7 @@ class frameExtractor:
         :param image: RGB image (numpy array NxMx3) with a screen to extract. If image is None, the image will be extracted from src_filename
         :param src_file_name: filename to load the source image where the screen needs to be extracted (e.g. HQ_digital/0a07d2cff5beb0580bca191427e8cd6e1a0eb678.jpg)
         :param dst_file_name: filename to save the preprocessed image (e.g. HQ_digital_frame/0a07d2cff5beb0580bca191427e8cd6e1a0eb678.jpg
+        :param return_image: a boolean, if True extractAndSave returns an image (np. array) / if False it just saves the image.
         :param output_shape: shape (in pxl) of the output image.
         """
         if image is None :
@@ -27,6 +28,7 @@ class frameExtractor:
         else :
             self.image = image
         self.dst_file_name = dst_file_name
+        self.return_image = return_image
         self.output_shape = output_shape
         self.frame = None
 
@@ -192,10 +194,14 @@ class frameExtractor:
     def extractAndSaveFrame(self):
         """
         Use this method to 1. detect and extract the frame & 2. save it in dst_file_name.
+        :return: the extracted frame (np.array) if it was specified when instantiating the class.
         """
         self.frameDetection()
         cv2.imwrite(self.dst_file_name, self.frame)
-
+        if self.return_image:
+            return self.frame
+        else:
+            return
 
 
 
@@ -210,8 +216,10 @@ if __name__ == "__main__":
     for file in glob.glob('Datasets/HQ_digital/*jpg'):
 
         try:
-            f = frameExtractor(src_file_name=file,
+            f = frameExtractor(image=None,
+                               src_file_name=file,
                                dst_file_name='Datasets/HQ_digital_preprocessing/'+str(file).split('/')[-1],
+                               return_image=False,
                                output_shape =(400,100))
             f.extractAndSaveFrame()
         except:
@@ -220,9 +228,11 @@ if __name__ == "__main__":
 
     for file in glob.glob('Datasets/LQ_digital/*jpg'):
         try:
-            f = frameExtractor(src_file_name=file,
+            f = frameExtractor(image=None,
+                               src_file_name=file,
                                dst_file_name='Datasets/LQ_digital_preprocessing/' + str(file).split('/')[-1],
-                               output_shape=(400, 100))
+                               return_image=False,
+                               output_shape =(400,100))
             f.extractAndSaveFrame()
         except:
             fail[1] += 1
@@ -230,8 +240,10 @@ if __name__ == "__main__":
 
     for file in glob.glob('Datasets/MQ_digital/*jpg'):
         try:
-            f = frameExtractor(src_file_name=file,
+            f = frameExtractor(image=None,
+                               src_file_name=file,
                                dst_file_name='Datasets/MQ_digital_preprocessing/' + str(file).split('/')[-1],
+                               return_image=False,
                                output_shape=(400, 100))
             f.extractAndSaveFrame()
         except:
@@ -240,8 +252,10 @@ if __name__ == "__main__":
 
     for file in glob.glob('Datasets/HQ_analog/*jpg'):
         try:
-            f = frameExtractor(src_file_name=file,
+            f = frameExtractor(image=None,
+                               src_file_name=file,
                                dst_file_name='Datasets/HQ_analog_preprocessing/' + str(file).split('/')[-1],
+                               return_image=False,
                                output_shape=(400, 100))
             f.extractAndSaveFrame()
         except:
@@ -250,8 +264,10 @@ if __name__ == "__main__":
 
     for file in glob.glob('Datasets/LQ_analog/*jpg'):
         try:
-            f = frameExtractor(src_file_name=file,
+            f = frameExtractor(image=None,
+                               src_file_name=file,
                                dst_file_name='Datasets/LQ_analog_preprocessing/' + str(file).split('/')[-1],
+                               return_image=False,
                                output_shape=(400, 100))
             f.extractAndSaveFrame()
         except:
