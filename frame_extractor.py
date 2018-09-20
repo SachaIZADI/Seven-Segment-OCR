@@ -1,14 +1,12 @@
+import shutil
+import os
 import numpy as np
-
 import imutils
 import cv2
 import scipy.spatial as sp
 from skimage.measure import label, regionprops
-
-
 import glob
-
-from homofilt import HomomorphicFilter
+from utils.homofilt import HomomorphicFilter
 
 
 
@@ -215,11 +213,11 @@ class frameExtractor:
         cleaned_img = cv2.dilate(thresh, None, iterations=1)
         self.frame = cleaned_img
 
-    # TODO commenter le code
+
     def sliceFrame(self):
         """
-        Use this method to
-        Get the bounding box considering that the comma is at 8/13 of the image
+        Use this method to slice the frame and only keep the integer part (e.g. 123.45 becomes 123).
+        Heuristic: comma is approx. at 8/13 of the image.
         :return:
         """
         stop_at = int(np.floor(self.output_shape[0]*8/13))
@@ -227,12 +225,12 @@ class frameExtractor:
 
 
     def extractAndSaveFrame(self):
-        # TODO : commenter le code
         """
         Use this method to
-                1. detect and extract the frame.
-                2.
-                3. save it in dst_file_name.
+                1. detect and select the frame/screen.
+                2. preprocessing to only keep numbers (and remove noise).
+                3. slice the frame to only keep integer part.
+                4. save the sliced frame in dst_file_name.
         :return: the extracted frame (np.array) if it was specified when instantiating the class.
         """
         self.frameDetection()
@@ -246,73 +244,58 @@ class frameExtractor:
 
 
 
+# --------------------- End of the class -----------------------------------
+
+
+
+
+
 """
 A main function to preprocess all the images.
 """
 
 if __name__ == "__main__":
 
-    fail = [0,0,0,0,0]
+    if os.path.exists('Datasets_frames/'):
+        shutil.rmtree('Datasets_frames/')
+        os.makedirs('Datasets_frames/')
+    else:
+        os.makedirs('Datasets_frames/')
+
+    fail = [0, 0, 0, 0, 0]
 
     for file in glob.glob('Datasets/HQ_digital/*jpg'):
 
         try:
             f = frameExtractor(image=None,
                                src_file_name=file,
-                               dst_file_name='Datasets/HQ_digital_preprocessing/'+str(file).split('/')[-1],
+                               dst_file_name='Datasets_frames/' + str(file).split('/')[-1],
                                return_image=False,
-                               output_shape =(400,100))
+                               output_shape=(400, 100))
             f.extractAndSaveFrame()
         except:
             fail[0] += 1
-
 
     for file in glob.glob('Datasets/LQ_digital/*jpg'):
         try:
             f = frameExtractor(image=None,
                                src_file_name=file,
-                               dst_file_name='Datasets/LQ_digital_preprocessing/' + str(file).split('/')[-1],
+                               dst_file_name='Datasets_frames/' + str(file).split('/')[-1],
                                return_image=False,
-                               output_shape =(400,100))
+                               output_shape=(400, 100))
             f.extractAndSaveFrame()
         except:
             fail[1] += 1
-
 
     for file in glob.glob('Datasets/MQ_digital/*jpg'):
         try:
             f = frameExtractor(image=None,
                                src_file_name=file,
-                               dst_file_name='Datasets/MQ_digital_preprocessing/' + str(file).split('/')[-1],
+                               dst_file_name='Datasets_frames/' + str(file).split('/')[-1],
                                return_image=False,
                                output_shape=(400, 100))
             f.extractAndSaveFrame()
         except:
             fail[2] += 1
 
-
-    for file in glob.glob('Datasets/HQ_analog/*jpg'):
-        try:
-            f = frameExtractor(image=None,
-                               src_file_name=file,
-                               dst_file_name='Datasets/HQ_analog_preprocessing/' + str(file).split('/')[-1],
-                               return_image=False,
-                               output_shape=(400, 100))
-            f.extractAndSaveFrame()
-        except:
-            fail[3] += 1
-
-
-    for file in glob.glob('Datasets/LQ_analog/*jpg'):
-        try:
-            f = frameExtractor(image=None,
-                               src_file_name=file,
-                               dst_file_name='Datasets/LQ_analog_preprocessing/' + str(file).split('/')[-1],
-                               return_image=False,
-                               output_shape=(400, 100))
-            f.extractAndSaveFrame()
-        except:
-            fail[4] += 1
-
-
-    print(fail)
+print(fail)

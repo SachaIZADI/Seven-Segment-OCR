@@ -2,13 +2,23 @@ import cv2
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 
 
-class cutDigits :
+class cutDigits:
+    def __init__(self, image=None, src_file_name=None, dst_folder_name=None, return_image=False, last_digit=3, labels=None):
+        """
+        The aim of this class is to extract digits from the frame-only preprocessed image.
+        We to delimit digits by bounding boxes.
+        We tried several approaches, but we present here the most successful one, a "dummy" yet efficient approach.
+        :param image: RGB image (numpy array NxMx3) of a SLICED SCREEN. If image is None, the image will be extracted from src_filename
+        :param src_file_name: filename of a SLICED SCREEN to load the source image (e.g. HQ_digital_preprocessing/0a07d2cff5beb0580bca191427e8cd6e1a0eb678.jpg)
+        :param image:
 
-    def __init__(self, image=None, src_file_name=None, dst_folder_name=None, return_image=False, last_digit=2, labels):
-        self.image = image
+        """
+        if image is None :
+            self.image = cv2.imread(src_file_name)
+        else:
+            self.image = image
         self.src_file_name = src_file_name
         self.dst_folder_name = dst_folder_name
         self.return_image = return_image
@@ -22,7 +32,8 @@ class cutDigits :
 
     #TODO : modifier le commentaire
     def get_bounding_box_dummy(self):
-        """1st approach : dummy approach
+        """
+        1st approach : dummy approach
         Get the bounding box considering that the comma is at 8/13 of the image
         and dividing the area by 4 before the detected comma
 
@@ -46,7 +57,7 @@ class cutDigits :
         :return:
         """
 
-
+        self.boxes = []
         self.box_size = self.image.shape[1]/4
 
         for i in range(self.last_digit):
@@ -55,49 +66,44 @@ class cutDigits :
             self.boxes += [self.image[:, int(inf):int(sup)]]
 
 
+    # TODO : modifier le commentaire
     def save_to_folder(self) :
         """
         :return:
         """
+        if self.dst_folder_name is None :
+            return
+
         for i in range(len(self.boxes)):
-            box = self.boxes[i]
-            label = self.labels[i]
+            if self.labels :
+                box = self.boxes[i]
+                label = self.labels[i]
 
-            cv2.imwrite(self.dst_file_name, self.sliced_frame)
+                file_name = self.src_file_name.split('/')[-1].split('.')[0]
+                dst_file_name = self.dst_folder_name + "/" \
+                                + file_name \
+                                + "_label_" + str(label) \
+                                + "_position_" + str(i) \
+                                + '.jpg'
 
-            mpimg.imsave(digits_path +  str(label) + "/" + ind, box)
+                cv2.imwrite(dst_file_name, box)
+
+            else :
+                box = self.boxes[i]
+
+                file_name = self.src_file_name.split('/')[-1].split('.')[0]
+                dst_file_name = self.dst_folder_name + "/" \
+                                + file_name \
+                                + "_label_no_" + \
+                                + "_position_" + str(i) \
+                                + '.jpg'
+
+                cv2.imwrite(dst_file_name, box)
 
 
 
-    def cut_and_affect_to_folder(self, preprocessed_img, dist, labels, digits_path, ind, last_digit = 2):
 
 
-        for i in range(last_digit):
-            inf = i*dist
-            sup = (i+1)*dist
-            box = preprocessed_img[:, int(inf):int(sup)]
-            #label = int(labels_df[labels_df['image'] == ind]['cadran_'+ str(i+1)])
-            label = labels[i]
-            mpimg.imsave(digits_path +  str(label) + "/" + ind, box)
-        return()
-
-
-    # ------------------------- csv_labels_to_df ----------------------
-    #
-    # From csv file in 'labels_path', converts into a panda dataframe
-    # must contain the 'cadran_1', 'cadran_2',
-    # 'cadran_3', 'cadran_4' columns (from first digit to last digit before the comma, from left to right)
-    #  and the 'image' column with the name of the image 'osdfhk7sd8.jpg'
-    def csv_labels_to_df(labels_path = "Datasets/labels_preprocessed/HQ_quality.csv"):
-        """
-        From csv file in 'labels_path', converts into a panda dataframe
-        The CSV file must contain the 'cadran_1', 'cadran_2',
-    'cadran_3', 'cadran_4' columns (from first digit to last digit before the comma, from left to right)
-    and the 'image' column with the name of the image 'osdfhk7sd8.jpg'
-        :return:
-        """
-        df = pd.read_csv(labels_path, sep = ";")
-        return(df)
 
 
 """
