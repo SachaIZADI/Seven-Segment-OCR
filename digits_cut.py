@@ -1,6 +1,7 @@
 import cv2
 import os
 import pandas as pd
+import shutil
 
 
 class cutDigits:
@@ -58,12 +59,15 @@ class cutDigits:
                 src_file_name = self.src_file_name.split('/')[-1].split('.')[0]
                 dst_file_name = 'Datasets_digits/%s/%s_%s.jpg' % (label, src_file_name, str(i))
                 cv2.imwrite(dst_file_name, box)
+                
+            else:
+                pass
 
-            else :
-                box = self.boxes[i]
-                src_file_name = self.src_file_name.split('/')[-1].split('.')[0]
-                dst_file_name = 'Datasets_digits/%s/%s_%s.jpg' % ('missing_label', src_file_name, str(i))
-                cv2.imwrite(dst_file_name, box)
+            #else :
+          #      box = self.boxes[i]
+           #     src_file_name = self.src_file_name.split('/')[-1].split('.')[0]
+            #    dst_file_name = 'Datasets_digits/%s/%s_%s.jpg' % ('missing_label', src_file_name, str(i))
+            #    cv2.imwrite(dst_file_name, box)
 
 
 # --------------------- End of the class -----------------------------------
@@ -75,6 +79,15 @@ A main function to cut the digits on all images.
 """
 
 if __name__ == "__main__":
+    
+    
+    if os.path.exists('Datasets_digits/'):
+        shutil.rmtree('Datasets_digits/')
+        for i in range(0,11):
+            os.makedirs('Datasets_digits/%i' %i)
+    else:
+        for i in range(0,11):
+            os.makedirs('Datasets_digits/%i' %i)
 
     # TODO: check why they fail
 
@@ -82,10 +95,17 @@ if __name__ == "__main__":
 
     df = []
     # NB: These 3 datasets were made with Excel
-    df += [pd.read_csv('Datasets_digits/HQ_digital.csv',sep=';')]
-    df += [pd.read_csv('Datasets_digits/LQ_digital.csv',sep=';')]
-    df += [pd.read_csv('Datasets_digits/MQ_digital.csv',sep=';')]
-    df = pd.concat(df)
+    
+    suffix = ".csv"
+    csv_directory = 'Datasets/'
+    csv_files = [i for i in os.listdir(csv_directory) if i.endswith( suffix )]
+    df = []
+    for i in range(len(csv_files)):
+        data = pd.read_csv(csv_directory +csv_files[i], sep=';', index_col = 0)
+        df.append(data)
+            
+    df = pd.concat(df, axis=0)
+    df = df.replace("X", 10)
 
     for i in range(df.shape[0]):
         line = df.iloc[i]
