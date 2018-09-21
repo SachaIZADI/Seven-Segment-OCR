@@ -195,8 +195,6 @@ class frameExtractor:
         self.raw_frame = warped
 
 
-
-    # TODO : work on this + apply low pass filter (sobel gradients etc.)
     # TODO : check why they fail
     """
     http://www.amphident.de/en/blog/preprocessing-for-automatic-pattern-identification-in-wildlife-removing-glare.html
@@ -207,8 +205,10 @@ class frameExtractor:
         """
         Final preprocessing that outputs a clean image 'cleaned_img' with more contrasts
         """
-
-        gray = cv2.cvtColor(self.raw_frame, cv2.COLOR_BGR2GRAY)
+        try :
+            gray = cv2.cvtColor(self.raw_frame, cv2.COLOR_BGR2GRAY)
+        except :
+            gray = self.raw_frame
         thresh = cv2.equalizeHist(gray)
         thresh = cv2.threshold(thresh, 45, 255, cv2.THRESH_BINARY_INV)[1]
         cleaned_img = cv2.dilate(thresh, None, iterations=1)
@@ -264,14 +264,7 @@ if __name__ == "__main__":
     fail = [0, 0, 0]
 
     for file in glob.glob('Datasets/HQ_digital/*jpg'):
-        """
-        f = frameExtractor(image=None,
-                           src_file_name=file,
-                           dst_file_name='Datasets_frames/' + str(file).split('/')[-1],
-                           return_image=False,
-                           output_shape=(400, 100))
-        f.extractAndSaveFrame()
-        """
+
         try:
             f = frameExtractor(image=None,
                                src_file_name=file,
