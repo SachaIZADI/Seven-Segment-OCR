@@ -161,18 +161,18 @@ class Model_Single(Model):
     def data_init(self):
         self.dataset = Dataset_Single()
 
-        self.data = self.digits_data         
+        self.data = self.dataset.digits_data         
         self.X =  self.data.iloc[:,0]
         self.y = self.data.iloc[:,1]
 
         self.ids_train, self.ids_val, self.y_train, self.y_val = train_test_split(self.X, self.y, test_size=0.25, random_state=1)
-        self.X_train = self.dataset.convert_to_arrays(ids_train)
-        self.X_val = self.dataset.convert_to_arrays(ids_val)
+        self.X_train = self.dataset.convert_to_arrays(self.ids_train)
+        self.X_val = self.dataset.convert_to_arrays(self.ids_val)
 
     def model_init(self):
 
 
-        model_input = Input((30,50,1))
+        model_input = Input((100, 256, 1))
         x = Conv2D(32, (3, 3), padding='same', name='conv2d_hidden_1', kernel_regularizer=regularizers.l2(0.01))(model_input)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
@@ -197,20 +197,20 @@ class Model_Single(Model):
 
         output = Dense(output_dim =11,activation = 'softmax', name='output')(x)
 
-        self.model = Model(input = model_input , output = output)
+        self.model = keras.models.Model(input = model_input , output = output)
         self.model._make_predict_function() 
 
     def train(self, lr = 1e-3, epochs=5):
         optimizer = Adam(lr=lr, decay=lr/10)
         self.model.compile(loss="sparse_categorical_crossentropy", optimizer= optimizer, metrics = ['accuracy'])
         keras.backend.get_session().run(tf.initialize_all_variables())
-        history = self.model.fit(self.X_train, self.y_train, batch_size= 32, nb_epoch=30, verbose=1, validation_data=(self.X_val, self.y_val))
+        self.history = self.model.fit(self.X_train, self.y_train, batch_size= 32, nb_epoch=30, verbose=1, validation_data=(self.X_val, self.y_val))
 
 
     def plot_acc(self):
         plt.figure(figsize=[8,6])
-        plt.plot(history.history['acc'],'r',linewidth=0.5)
-        plt.plot(history.history['val_acc'],'b',linewidth=0.5)
+        plt.plot(self.history.history['acc'],'r',linewidth=0.5)
+        plt.plot(self.history.history['val_acc'],'b',linewidth=0.5)
         plt.legend(['Training Accuracy', 'Validation Accuracy'],fontsize=18)
         plt.xlabel('Epochs ',fontsize=16)
         plt.ylabel('Accuracy',fontsize=16)
@@ -219,8 +219,8 @@ class Model_Single(Model):
 
     def plot_loss(self):        
         plt.figure(figsize=[8,6])
-        plt.plot(history.history['loss'],'r',linewidth=0.5)
-        plt.plot(history.history['val_loss'],'b',linewidth=0.5)
+        plt.plot(self.history.history['loss'],'r',linewidth=0.5)
+        plt.plot(self.history.history['val_loss'],'b',linewidth=0.5)
         plt.legend(['Training loss', 'Validation Loss'],fontsize=18)
         plt.xlabel('Epochs ',fontsize=16)
         plt.ylabel('Loss',fontsize=16)

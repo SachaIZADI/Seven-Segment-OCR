@@ -53,8 +53,8 @@ class Dataset_Single(Dataset):
         ids = []
         labels = []
         for i in range(11):
-            n_directory = self.digits_directory + '%i' %i
-            for j in os.listdir(n_directory):
+            directory = self.digits_directory + '%i/' %i
+            for j in os.listdir(directory):
                 ids.append(directory+j)
                 labels.append(i)
         digits_data = pd.DataFrame(list(zip(ids,labels)))
