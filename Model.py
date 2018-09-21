@@ -88,11 +88,11 @@ class Model_Multi(Model):
         self.model = keras.models.Model(input = model_input , output = outputs)
         self.model._make_predict_function()
         
-    def train(self, lr = 1e-3, epochs=10):
+    def train(self, lr = 1e-3, epochs=50):
         optimizer = Adam(lr=lr, decay=lr/10)
         self.model.compile(loss="sparse_categorical_crossentropy", optimizer= optimizer, metrics = ['accuracy'])
         keras.backend.get_session().run(tf.initialize_all_variables())
-        self.history = self.model.fit(self.X_train, self.y_train_vect, batch_size= 50, nb_epoch=10, verbose=1, validation_data=(self.X_val, self.y_val_vect))
+        self.history = self.model.fit(self.X_train, self.y_train_vect, batch_size= 50, nb_epoch=epochs, verbose=1, validation_data=(self.X_val, self.y_val_vect))
         
         
     def plot_loss(self):
@@ -134,15 +134,15 @@ class Model_Multi(Model):
                 correct_preds = correct_preds + 1
             print('exact accuracy', correct_preds / self.X_val.shape[0])
             
-            mse = 0 
-            diff = []
-            for i in range(self.X_val.shape[0]):
-                    pred_list_i = [np.argmax(pred[i]) for pred in self.y_pred]
-                    pred_number = 1000* pred_list_i[0] + 100* pred_list_i[1] + 10 * pred_list_i[2] + 1* pred_list_i[3]
-                    val_list_i  = self.y_val.values[i].astype('int')
-                    val_number = 1000* val_list_i[0] + 100*  val_list_i[1] + 10 *  val_list_i[2] + 1*  val_list_i[3]
-                    diff.append(val_number - pred_number)
-            print('difference label vs. prediction', diff)
+        mse = 0 
+        diff = []
+        for i in range(self.X_val.shape[0]):
+                pred_list_i = [np.argmax(pred[i]) for pred in self.y_pred]
+                pred_number = 1000* pred_list_i[0] + 100* pred_list_i[1] + 10 * pred_list_i[2] + 1* pred_list_i[3]
+                val_list_i  = self.y_val.values[i].astype('int')
+                val_number = 1000* val_list_i[0] + 100*  val_list_i[1] + 10 *  val_list_i[2] + 1*  val_list_i[3]
+                diff.append(val_number - pred_number)
+        print('difference label vs. prediction', diff)
 
     
     def train_predict(self):
@@ -228,9 +228,39 @@ class Model_Single(Model):
         plt.show()
 
     def predict(self):
+        
+        self.y_pred = self.model.predict(self.X_val)
+        
+        ids = []
+        pred_list = []
+        val_list = []
 
-        preds = self.model.predict(self.X_val)
-        correct_preds = 0
+        for i in range(self.X_val.shape[0]):
+            self.val_id = self.ids_val.values[i]
+            ids.append(str(self.val_id.split('/')[2].split('-')[0][:-1]))
+            pred_list_i = np.argmax(self.y_pred[i]).astype('int')
+            pred_list.append(pred_list_i)
+            val_list_i  = self.y_val.values[i].astype('int')
+            val_list.append(val_list_i) 
+
+        q = []
+
+        for i in np.unique(ids):
+            q.append([i, np.where(np.isin(ids,i))[0]])
+
+        correct_count = 0 
+        for i in range(len(q)):
+            v = []
+            p = []
+            for j in range(len((q[i][1]))):
+                idx = (q[i][1][j])
+                val_list_i = val_list[idx]
+                pred_list_i = pred_list[idx]
+                v.append(val_list_i)
+                p.append(pred_list_i)
+            if np.array_equal(p, v):
+                correct_count = correct_count + 1
+        print('real_acc', correct_count /self.X_val.shape[0])
 
 
     def train_predict(self):
@@ -239,10 +269,5 @@ class Model_Single(Model):
         self.plot_loss()
         self.plot_acc()
         self.predict()
-
-
-
-
-
 
 
