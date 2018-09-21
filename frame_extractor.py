@@ -8,6 +8,8 @@ from skimage.measure import label, regionprops
 import glob
 from utils.homofilt import HomomorphicFilter
 
+import skimage.filters as ft
+
 
 
 class frameExtractor:
@@ -195,6 +197,7 @@ class frameExtractor:
 
 
     # TODO : work on this + apply low pass filter (sobel gradients etc.)
+    # TODO : check why they fail
     """
     http://www.amphident.de/en/blog/preprocessing-for-automatic-pattern-identification-in-wildlife-removing-glare.html
     http://people.csail.mit.edu/yichangshih/mywebsite/reflection.pdf
@@ -204,12 +207,10 @@ class frameExtractor:
         """
         Final preprocessing that outputs a clean image 'cleaned_img' with more contrasts
         """
+
         gray = cv2.cvtColor(self.raw_frame, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        homo_filter = HomomorphicFilter(a=0.75, b=1.25)
-        img_filtered = homo_filter.filter(I=blurred, filter_params=[30, 2])
-        gamma = frameExtractor.adjust_gamma(img_filtered, gamma=5)
-        thresh = cv2.threshold(gamma, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+        thresh = cv2.equalizeHist(gray)
+        thresh = cv2.threshold(thresh, 45, 255, cv2.THRESH_BINARY_INV)[1]
         cleaned_img = cv2.dilate(thresh, None, iterations=1)
         self.frame = cleaned_img
 
@@ -248,8 +249,6 @@ class frameExtractor:
 
 
 
-
-
 """
 A main function to preprocess all the images.
 """
@@ -262,10 +261,17 @@ if __name__ == "__main__":
     else:
         os.makedirs('Datasets_frames/')
 
-    fail = [0, 0, 0, 0, 0]
+    fail = [0, 0, 0]
 
     for file in glob.glob('Datasets/HQ_digital/*jpg'):
-
+        """
+        f = frameExtractor(image=None,
+                           src_file_name=file,
+                           dst_file_name='Datasets_frames/' + str(file).split('/')[-1],
+                           return_image=False,
+                           output_shape=(400, 100))
+        f.extractAndSaveFrame()
+        """
         try:
             f = frameExtractor(image=None,
                                src_file_name=file,
@@ -298,4 +304,4 @@ if __name__ == "__main__":
         except:
             fail[2] += 1
 
-print(fail)
+    print(fail)
