@@ -14,10 +14,12 @@ The aim of the project is to digitize the monitoring of mines activities. We foc
 
 We tried 2 different approaches:
 1. The "digit-per-digit" approach
-  1. TBC
+    1. Image processing: identify the screen, crop the picture, grayscale, thresholding, localize digits and crop them.
+    2. Learning phase: learn a "MNIST" model that predicts each digit individually.
+    3. Inference phase: pass each cropped digit to the "MNIST" model, and append the results.
 
-2. The "all-in-one" approach
-  1. TBC
+2. The "end-to-end" approach
+    1. TBC
 <img src = "img/NN.png" height="200">
 
 ## Results
